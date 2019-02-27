@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Android Architecture Introduction</title>
+		<style>
+/* minimal style */
+body, h1, h2, h3, h4, h5, p {
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	background-color: #f6f8fa;
+}
+
+section.slide {
+	position: relative;
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	background-color: white;
+	margin-bottom: 20px;
+}
+
+@media print {
+	section.slide {
+		page-break-before: always;
+	}
+}
+
+section.slide > div.padding {
+	margin: 2em;
+}
+
+section.slide > div.pager {
+	position: absolute;
+	top: 0;
+	right: 0;
+	margin: 1em;
+	color: rgba(0,0,0,0.4);
+	font-size: 85%;
+}
+
+/* boxes can be used to put elements, such as logos into slides */
+section.slide > div.box1,
+section.slide > div.box2,
+section.slide > div.box3,
+section.slide > div.box4,
+section.slide > div.box5,
+section.slide > div.box6,
+section.slide > div.box7,
+section.slide > div.box8 {
+	position: absolute;
+	top: 0;
+	right: 0;
+	margin: 1em;
+}
+
+section.slide div.row {
+	display: flex;
+	justify-content: space-between;
+}
+
+section.slide div.column {
+	width: 100%;
+	padding-right: 1em;
+}
+
+section.slide div.column:last-child {
+	padding-right: 0;
+}
+
+/* base style */
+body {
+	font-family: sans-serif;
+	font-size: 1.5em;
+	line-height: 1.5;
+}
+
+h1, h2, table, div.row, pre {
+	margin-bottom: 1em;
+}
+
+h3, h4, h5, p {
+	margin-bottom: 0.5em;
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+table th {
+	text-align: left;
+	font-size: 85%;
+}
+
+table td, table th {
+	padding: 0.4em 0.8em;
+}
+
+table tr:nth-child(even) {
+	background-color: #f6f8fa;
+}
+
+img.center {
+	display: block;
+	margin: 0 auto;
+}
+
+code {
+	padding: 0.4em;
+	padding-top: 0.2em;
+	padding-bottom: 0.2em;
+	margin: 0;
+	font-size: 85%;
+	background-color: rgba(27,31,35,0.05);
+	border-radius: 3px;	
+}
+
+pre {
+	padding: 16px;
+	overflow: auto;
+	font-size: 85%;
+	line-height: 1.45;
+	background-color: #f6f8fa;
+	border-radius: 3px;
+}
+
+pre > code {
+	background: none;
+}
+</style>
+		<style>@font-face {
+  font-family: "HdM Frutiger";
+  src: url("./assets/HdMFrutigerNextPro-Medium.otf") format("opentype");
+}
+
+@font-face {
+  font-family: "HdM Frutiger";
+  src: url("./assets/HdMFrutigerNextPro-Bold.otf") format("opentype");
+  font-weight: bold;
+}
+
+@font-face {
+  font-family: "HdM Frutiger";
+  src: url("./assets/HdMFrutigerNextPro-Light.otf") format("opentype");
+  font-weight: light;
+}
+
+body {
+  font-family: "HdM Frutiger", sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+a {
+  color: #e41c3b;
+}
+
+small {
+  font-weight: light;
+}
+
+section.slide > div.pager {
+  top: auto;
+  bottom: 0;
+}
+
+section.slide > div.box1 {
+  width: 100px;
+  height: 91px;
+  background-image: url("./assets/hdm.jpg");
+  background-repeat: no-repeat;
+  background-size: 100px;
+}
+</style>
+		<script>
+var p8 = {};
+p8.allSlides = function() {
+  return document.querySelectorAll("section.slide");
+}
+
+p8.currentSlide = function() {
+  var slides = p8.allSlides();
+  return slides[p8.currentSlideIndex()];
+}
+
+p8.currentSlideIndex = function() {
+  var slides = p8.allSlides();
+  for(var i = slides.length-1; i >= 0; i--) {
+    if((window.pageYOffset +1) >= slides[i].offsetTop){
+      return i;
+    }
+  };
+  return 0;
+}
+
+p8.nextSlideIndex = function() {
+  var slides = p8.allSlides();
+  var current = p8.currentSlideIndex();
+  var next = current + 1;
+  if(next >= slides.length) {
+    return current;
+  }
+  return next;
+}
+
+p8.previousSlideIndex = function() {
+  var slides = p8.allSlides();
+  var current = p8.currentSlideIndex();
+  var prev = current - 1;
+  if(prev < 0) {
+    return 0;
+  }
+  return prev;
+}
+
+p8.scrollToSlide = function(index) {
+  var slides = p8.allSlides();
+  var slide = slides[index];
+  window.scrollTo(0, slide.offsetTop);
+}
+
+p8.nextSlide = function() {
+  p8.scrollToSlide(p8.nextSlideIndex());
+}
+
+p8.previousSlide = function() {
+  p8.scrollToSlide(p8.previousSlideIndex());
+}
+
+p8.registerKeyNavigation = function() {
+  document.onkeydown = function(e){
+    // right, down and space
+    if(e.keyCode == 39 || e.keyCode == 40 || e.keyCode == 32) {
+      p8.nextSlide();
+    }
+    // left and up
+    if(e.keyCode == 37 || e.keyCode == 38) {
+      p8.previousSlide();
+    }
+		// space typically scrolls down an undefined distance
+		if(e.keyCode == 32) {
+			e.preventDefault();
+		}
+  }
+}
+document.addEventListener('DOMContentLoaded', p8.registerKeyNavigation, false);
+</script>
+	</head>
+	<body>
+		<section class='slide' id="1">
+<div class='pager'><span class='current'>1</span><span class='separator'>/</span><span class='total'>19</span></div>
+			<div class="box1"></div>
+			<div class="box2"></div>
+			<div class="box3"></div>
+			<div class="box4"></div>
+			<div class="box5"></div>
+			<div class="box6"></div>
+			<div class="box7"></div>
+			<div class="box8"></div>
+		
+			<div class='padding'>
+	<h1>Architecture of Smartphone Operating Systems by Example - Android</h1>
+
+<p><small>By Prof. Dr. Ansgar Gerlicher, Feb. 2019</small></p>
+
+</div>
+</section>
+<section class='slide' id="2">
+<div class='pager'><span class='current'>2</span><span class='separator'>/</span><span class='total'>19</span></div>
+			<div class="box1"></div>
+			<div class="box2"></div>
+			<div class="box3"></div>
+			<div class="box4"></div>
+			<div class="box5"></div>
+			<div class="box6"></div>
+			<div class="box7"></div>
+			<div class="box8"></div>
+		
+<div class='padding'>
+
+<h2>Agenda</h2>
+
+<ul>
+<li>Architektur, Protokolle und Schnittstellen
+
+<ul>
+<li>Android Platform Architecture (Platform challenges, OS Layers, Dalvic / ART, Dex Files)</li>
+<li>Developer Toolchain (Android Studio, ADB)</li>
+<li>Android Development Basics</li>
+</ul></li>
+<li>Apps, Services &amp; IPC
+
+<ul>
+<li>Intents, Binder, AIDL</li>
+</ul></li>
+<li>Kommunikation Apps mit Backend/Cloud -&gt; Informationsflow (Protokolle)</li>
+<li>Permission / Security</li>
+<li>„Diagnose in Android Apps“
+
+<ul>
+<li>Logging / Fehleranalyse / Debugging</li>
+</ul></li>
+</ul>
+
+</div>
+</section>
+<section class='slide' id="3">
+<div class='pager'><span class='current'>3</span><span class='separator'>/</span><span class='total'>19</span></div>
+			<div class="box1"></div>
+			<div class="box2"></div>
+			<div class="box3"></div>
+			<div class="box4"></div>
+			<div class="box5"></div>
+			<div class="box6"></div>
+			<div class="box7"></div>
+			<div class="box8"></div>
+		
+<div class='padding'>
+
+<h2>What is Android?</h2>
+
+<ul>
+<li>Operating System for &hellip;
+
+<ul>
+<li>&hellip;</li>
+<li>&hellip;</li>
+<li>&hellip;</li>
+<li>&hellip;</li>
+<li>&hellip;</li>
+<li>&hellip;</li>
+</ul></li>
+</ul>
+
+</div>
+</section>
+<section class='slide' id="4">
+<div class='pager'><span class='current'>4</span><span class='separator'>/</span><span class='total'>19</span></div>
+			<div class="box1"></div>
+			<div class="box2"></div>
+			<div class="box3"></div>
+			<div class="box4"></div>
+			<div class="box5"></div>
+			<div class="box6"></div>
+			<div class="box7"></div>
+			<div class="box8"></div>
+		
+<div class='padding'>
+
+<p><img src="./assets/android_devices.png" alt="center 60%" style="width: 60%;" class="center "></p>
+
+</div>
+</section>
+<section class='slide' id="5">
+<div class='pager'><span class='current'>5</span><span class='separator'>/</span><span class='total'>19</span></div>
+			<div class="box1"></div>
+			<div class="box2"></div>
+			<div class="box3"></div>
+			<div class="box4"></div>
+			<div class="box5"></div>
+			<div class="box6"></div>
+			<div class="box7"></div>
+			<div class="box8"></div>
+		
+<div class='padding'>
+
+<h2>What is Android?</h2>
+
+<ul>
+<li>Operating System for &hellip;
+
+<ul>
+<li>Smartphones</li>
+<li>Tablets</li>
+<li>Smart Watches</li>
+<li>Smart TVs</li>
+<li>Infotainment Systems</li>
+<li>Or more general: Embedded Systems</li>
+</ul></li>
+</ul>
+
+</div>
+</section>
+<section class='slide' id="6">
+<div class='pager'><span class='current'>6</span><span class='separator'>/</span><span class='total'>19</span></div>
+			<div class="box1"></div>
+			<div class="box2"></div>
+			<div class="box3"></div>
+			<div class="box4"></div>
+			<div class="box5"></div>
+			<div class="box6"></div>
+			<div class="box7"></div>
+			<div class="box8"></div>
+		
+<div class='padding'>
+
+<h2>Short Android History</h2>
+
+<ul>
+<li>July 2005: Google acquires Android Inc.</li>
+<li>5. November 2007: Open Handset Alliance established</li>
+<li>21. October 2008: Google publishes the Android  source code (Apache 2.0 License)</li>
+<li>2. February 2009: T-Mobile G1 / HTC Dream is first available Android hardware in Germany</li>
+<li>February 2011: Motorola Xoom: First Tablet with Android 3.0 (Honeycomb)</li>
+<li>19. October 2011: Release of Ice Cream Sandwich (ICS, 4.0) on Samsung Galaxy Nexus</li>
+<li>9. July 2012: Release of Jelly Bean (4.1) and Google Nexus 7 Tablet</li>
+<li>&hellip;</li>
+</ul>
+
+</div>
+</section>
+<section class='slide' id="7">
+<div class='pager'><span class='current'>7</span><span class='separator'>/</span><span class='total'>19</span></div>
+			<div class="box1"></div>
+			<div class="box2"></div>
+			<div class="box3"></div>
+			<div class="box4"></div>
+			<div class="box5"></div>
+			<div class="box6"></div>
+			<div class="box7"></div>
+			<div class="box8"></div>
+		
+<div class='padding'>
+
+<h2>What comes with Android?</h2>
+
+<ul>
+<li>Basic system tools, e.g. dialer, address book&hellip;</li>
+<li>Media support: H.264, MP4, MP3, WMA, Ogg&hellip;</li>
+<li>Messaging: SMS, MMS</li>
+<li>Connectivity: Wi-Fi, GSM/EDGE, UMTS, Bluetooth, NFC</li>
+<li>2D/3D graphics (OpenGL)</li>
+<li>Multitasking</li>
+<li>Additional Hardware: Camera, GPS, accelerometer, gyroscope, magnetometer&hellip;</li>
+</ul>
+
+<p><img src="./assets/android_skateboard.gif" alt="center" style="" class="center "></p>
+
+<p>Image source: giphy.com</p>
+
+</div>
+</section>
+<section class='slide' id="8">
+<div class='pager'><span class='current'>8</span><span class='separator'>/</span><span class='total'>19</span></div>
+			<div class="box1"></div>
+			<div class="box2"></div>
+			<div class="box3"></div>
+			<div class="box4"></div>
+			<div class="box5"></div>
+			<div class="box6"></div>
+			<div class="box7"></div>
+			<div class="box8"></div>
+		
+<div class='padding'>
+
+<h1>Android Architecture</h1>
+
+</div>
+</section>
+<section class='slide' id="9">
+<div class='pager'><span class='current'>9</span><span class='separator'>/</span><span class='total'>19</span></div>
+			<div class="box1"></div>
+			<div class="box2"></div>
+			<div class="box3"></div>
+			<div class="box4"></div>
+			<div class="box5"></div>
+			<div class="box6"></div>
+			<div class="box7"></div>
+			<div class="box8"></div>
+		
+<div class='padding'>
+
+<h2>Android Platform Challenges</h2>
+
+<ul>
+<li>Small / cheap devices with
+
+<ul>
+<li>Low processing power</li>
+<li>Little memory</li>
+<li>Battery driven</li>
+<li>Maybe slow networking speed</li>
+</ul></li>
+<li>Various hardware (Smartphone, Tablet, Watch, Infotainment, TV, thousands of brands)
+
+<ul>
+<li>Requires platform abstraction</li>
+</ul></li>
+</ul>
+
+</div>
+</section>
+<section class='slide' id="10">
+<div class='pager'><span class='current'>10</span><span class='separator'>/</span><span class='total'>19</span></div>
+			<div class="box1"></div>
+			<div class="box2"></div>
+			<div class="box3"></div>
+			<div class="box4"></div>
+			<div class="box5"></div>
+			<div class="box6"></div>
+			<div class="box7"></div>
+			<div class="box8"></div>
+		
+<div class='padding'>
+
+<div class='row'>
+
+
+<div class='column'>
+
+
+<h2>Android Platform Architecture</h2>
+
+<ul>
+<li>Based on Linux Kernel (v3.0 since Android 4.x)</li>
+<li>Hardware Abstraction Layer providing standardized library modules for device&rsquo;s harware</li>
+<li>Android Runtime (ART) since v5.0 before,  Dalvik VM</li>
+<li>Native Libraries written in C/C++</li>
+<li>Java API Framework for normal Android Apps</li>
+<li>System Apps use the Java APIs</li>
+<li><a href="https://developer.android.com/guide/platform/index.html">See: developer.android.com</a>
+<br /></li>
+</ul>
+
+</div>
+   
+
+<div class='column'>
+    
+
+<p><img src="https://developer.android.com/guide/platform/images/android-stack_2x.png" alt="60%" style="width: 60%;" class=""></p>
+
+<p></div>
+</p>
+
+</div>
+
+
+</div>
+</section>
+<section class='slide' id="11">
+<div class='pager'><span class='current'>11</span><span class='separator'>/</span><span class='total'>19</span></div>
+			<div class="box1"></div>
+			<div class="box2"></div>
+			<div class="box3"></div>
+			<div class="box4"></div>
+			<div class="box5"></div>
+			<div class="box6"></div>
+			<div class="box7"></div>
+			<div class="box8"></div>
+		
+<div class='padding'>
+
+<h2>Dalvik VM / ART Optimizations</h2>
+
+<table>
+<thead>
+<tr>
+<th>Optimization</th>
+<th>Effect</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Combination of multiple Class files in one DEX file</td>
+<td>Smaller memory footprint, faster load of the application</td>
+</tr>
+
+<tr>
+<td>Sharing of DEX files between processes (read-only mapping)</td>
+<td>Smaller memory footprint, faster load of the application</td>
+</tr>
+
+<tr>
+<td>Byte ordering and word alignment according to local machine (install time)</td>
+<td>Faster load of the application DEX file itself still platform independent</td>
+</tr>
+
+<tr>
+<td>Bytecode pre-verification (as much as possible, install time)</td>
+<td>Faster load and execution</td>
+</tr>
+
+<tr>
+<td>Install-time optimization of bytecode</td>
+<td>Faster execution, still platform independence</td>
+</tr>
+
+<tr>
+<td>Register instead of stack based virtual machine</td>
+<td>Faster execution (~30%)</td>
+</tr>
+</tbody>
+</table>
+
+<p>See: <a href="http://sites.google.com/site/io/dalvik-vm-internals">http://sites.google.com/site/io/dalvik-vm-internals</a></p>
+
+</div>
+</section>
+<section class='slide' id="12">
+<div class='pager'><span class='current'>12</span><span class='separator'>/</span><span class='total'>19</span></div>
+			<div class="box1"></div>
+			<div class="box2"></div>
+			<div class="box3"></div>
+			<div class="box4"></div>
+			<div class="box5"></div>
+			<div class="box6"></div>
+			<div class="box7"></div>
+			<div class="box8"></div>
+		
+<div class='padding'>
+
+<h2>Dex File Format</h2>
+
+<p><img src="./assets/dex_file_format.png" alt="center" style="" class="center "></p>
+
+</div>
+</section>
+<section class='slide' id="13">
+<div class='pager'><span class='current'>13</span><span class='separator'>/</span><span class='total'>19</span></div>
+			<div class="box1"></div>
+			<div class="box2"></div>
+			<div class="box3"></div>
+			<div class="box4"></div>
+			<div class="box5"></div>
+			<div class="box6"></div>
+			<div class="box7"></div>
+			<div class="box8"></div>
+		
+<div class='padding'>
+
+<h1>Android Developer Toolchain</h1>
+
+</div>
+</section>
+<section class='slide' id="14">
+<div class='pager'><span class='current'>14</span><span class='separator'>/</span><span class='total'>19</span></div>
+			<div class="box1"></div>
+			<div class="box2"></div>
+			<div class="box3"></div>
+			<div class="box4"></div>
+			<div class="box5"></div>
+			<div class="box6"></div>
+			<div class="box7"></div>
+			<div class="box8"></div>
+		
+<div class='padding'>
+
+<h2>Android Studio Contains</h2>
+
+<ul>
+<li>Android SDK
+
+<ul>
+<li>Android APIs</li>
+<li>AVD Manager &amp; Emulator</li>
+<li>Android Development Tools
+
+<ul>
+<li>ddms (Dalvik Debug Monitor Service)</li>
+<li>adb (Android Debug Bridge)</li>
+<li>dx (.class -&gt; .dex)</li>
+<li>aapt (Android Asset Packaging Tool)</li>
+</ul></li>
+</ul></li>
+<li>Android NDK</li>
+<li>Download <a href="https://developer.android.com/studio/index.html">here</a></li>
+</ul>
+
+</div>
+</section>
+<section class='slide' id="15">
+<div class='pager'><span class='current'>15</span><span class='separator'>/</span><span class='total'>19</span></div>
+			<div class="box1"></div>
+			<div class="box2"></div>
+			<div class="box3"></div>
+			<div class="box4"></div>
+			<div class="box5"></div>
+			<div class="box6"></div>
+			<div class="box7"></div>
+			<div class="box8"></div>
+		
+<div class='padding'>
+
+<h2>Android Debug Bridge (adb)</h2>
+
+<ul>
+<li>Terminal tool to connect to a device
+
+<ul>
+<li>Find it at (on macOS): <code>/Users/\&lt;user&gt;/Library/Android/sdk/platform-tools</code></li>
+</ul></li>
+<li>open shell on emulator</li>
+</ul>
+
+<pre><code>
+&gt; adb -e shell 
+
+</code></pre>
+
+<ul>
+<li>copy file/dir to device</li>
+</ul>
+
+<pre><code>
+&gt; adb push \&lt;local&gt; \&lt;remote&gt;
+
+</code></pre>
+
+<ul>
+<li>copy file/dir from device</li>
+</ul>
+
+<pre><code>
+&gt; adb pull \&lt;remote&gt; \[\&lt;local&gt;]
+
+</code></pre>
+
+<ul>
+<li>Install package</li>
+</ul>
+
+<pre><code>
+&gt; adb install \&lt;file&gt;
+
+</code></pre>
+
+</div>
+</section>
+<section class='slide' id="16">
+<div class='pager'><span class='current'>16</span><span class='separator'>/</span><span class='total'>19</span></div>
+			<div class="box1"></div>
+			<div class="box2"></div>
+			<div class="box3"></div>
+			<div class="box4"></div>
+			<div class="box5"></div>
+			<div class="box6"></div>
+			<div class="box7"></div>
+			<div class="box8"></div>
+		
+<div class='padding'>
+
+<h1>Android Development Basics</h1>
+
+<ul>
+<li>The Manifest</li>
+<li>User Interface Layout Files</li>
+<li>Resources (Strings, Images, etc.)</li>
+<li>Support Libraries</li>
+<li>Android Build Process</li>
+</ul>
+
+</div>
+</section>
+<section class='slide' id="17">
+<div class='pager'><span class='current'>17</span><span class='separator'>/</span><span class='total'>19</span></div>
+			<div class="box1"></div>
+			<div class="box2"></div>
+			<div class="box3"></div>
+			<div class="box4"></div>
+			<div class="box5"></div>
+			<div class="box6"></div>
+			<div class="box7"></div>
+			<div class="box8"></div>
+		
+<div class='padding'>
+
+<h2>Android Manifest</h2>
+
+<ul>
+<li>It names the Java package for the application (unique identifier for the app)</li>
+<li>It describes the components of the application (e.g. activities, services, etc.) and names the classes that implement them</li>
+<li>Defines the Intent messages that they can handle</li>
+<li>Declares the permissions</li>
+<li>It declares the minimum level of the Android API that the application requires.</li>
+<li>It lists the libraries that the application must be linked against.</li>
+<li>&hellip;</li>
+</ul>
+
+</div>
+</section>
+<section class='slide' id="18">
+<div class='pager'><span class='current'>18</span><span class='separator'>/</span><span class='total'>19</span></div>
+			<div class="box1"></div>
+			<div class="box2"></div>
+			<div class="box3"></div>
+			<div class="box4"></div>
+			<div class="box5"></div>
+			<div class="box6"></div>
+			<div class="box7"></div>
+			<div class="box8"></div>
+		
+<div class='padding'>
+
+<h2>Android Manifest Structure</h2>
+
+<pre><code>
+&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;manifest&gt;
+    &lt;uses-permission /&gt;
+	&lt;application&gt;
+        &lt;activity&gt;
+            &lt;intent-filter&gt;
+                &lt;action /&gt;
+                &lt;category /&gt;
+                &lt;data /&gt;
+            &lt;/intent-filter&gt;
+            &lt;meta-data /&gt;
+        &lt;/activity&gt;
+         &lt;service&gt;
+            &lt;intent-filter&gt; . . . &lt;/intent-filter&gt;
+            &lt;meta-data/&gt;
+        &lt;/service&gt;
+	&lt;/application&gt;
+&lt;/manifest&gt;
+
+</code></pre>
+
+</div>
+</section>
+<section class='slide' id="19">
+<div class='pager'><span class='current'>19</span><span class='separator'>/</span><span class='total'>19</span></div>
+			<div class="box1"></div>
+			<div class="box2"></div>
+			<div class="box3"></div>
+			<div class="box4"></div>
+			<div class="box5"></div>
+			<div class="box6"></div>
+			<div class="box7"></div>
+			<div class="box8"></div>
+		
+<div class='padding'>
+</div>
+		</section>
+	</body>
+</html>

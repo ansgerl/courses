@@ -1,0 +1,46 @@
+@font-face {
+  font-family: "HdM Frutiger";
+  src: url("./assets/HdMFrutigerNextPro-Medium.otf") format("opentype");
+}
+
+@font-face {
+  font-family: "HdM Frutiger";
+  src: url("./assets/HdMFrutigerNextPro-Bold.otf") format("opentype");
+  font-weight: bold;
+}
+
+@font-face {
+  font-family: "HdM Frutiger";
+  src: url("./assets/HdMFrutigerNextPro-Light.otf") format("opentype");
+  font-weight: light;
+}
+
+body {
+  font-family: "HdM Frutiger", sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+a {
+  color: #e41c3b;
+}
+
+small {
+  font-weight: light;
+}
+
+section.slide > div.pager {
+  top: auto;
+  bottom: 0;
+}
+
+section.slide > div.box1 {
+  width: 100px;
+  height: 91px;
+  background-image: url("./assets/hdm.jpg");
+  background-repeat: no-repeat;
+  background-size: 100px;
+}

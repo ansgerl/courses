@@ -1,0 +1,10 @@
+#!/bin/bash
+
+for md in *.md
+do
+  echo $md
+  ./present8 --style assets/hdm.css --output ${md%.md}.html --title "Android Architecture Introduction" $md
+done
+
+mv README.html index.html
+
